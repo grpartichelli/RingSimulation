@@ -1,5 +1,10 @@
-To run, use the commands:
-
+## To run, use the commands:
+```
 cmake .
+```
+```
 make 
+```
+```
 ./mystoragering platform_storage.xml <num of bytes of the token>
+```
