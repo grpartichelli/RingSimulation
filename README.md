@@ -1,5 +1,3 @@
-#RingSimulation README
-
 ## To run use the commands:
 ```
 cmake .
