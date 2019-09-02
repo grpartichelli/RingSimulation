@@ -1,4 +1,6 @@
-## To run, use the commands:
+#RingSimulation README
+
+## To run use the commands:
 ```
 cmake .
 ```
