@@ -1,3 +1,5 @@
-RingSimulation
+To run, use the commands:
 
-Storage and Message trading with hosts on a ring, using SimGrid.
+cmake .
+make 
+./mystoragering platform_storage.xml <num of bytes of the token>
