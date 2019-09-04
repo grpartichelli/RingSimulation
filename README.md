@@ -6,5 +6,5 @@ cmake .
 make 
 ```
 ```
-./mystoragering platform_storage.xml <num of bytes of the token>
+./mystoragering platform_storage.xml <num of bytes of the token> <computation cost>
 ```

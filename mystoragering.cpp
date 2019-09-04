@@ -13,6 +13,7 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(sample_simulator, "Messages specific for this simul
 struct Msg{
 	long int size;
 	std::string content;
+  long int task_cost;
 };
 
 //Reads a certain size of bytes from a single disk
@@ -35,13 +36,13 @@ void write_disks(std::vector<std::string> disk_vector, long int size){
 		storage = simgrid::s4u::Storage::by_name(disk);
 		sg_size_t write = storage->write(size);
 		if (size >= GigaByte)
-  			XBT_INFO("Read %llu GB from %s", write/GigaByte, disk.c_str());
+  			XBT_INFO("Write %llu GB from %s", write/GigaByte, disk.c_str());
   		else
-  			XBT_INFO("Read %llu Bytes from %s", write, disk.c_str());
+  			XBT_INFO("Write %llu Bytes from %s", write, disk.c_str());
 	}
 
 }
-static void communicate(long int token_size){
+static void communicate(long int token_size, long int task_cost){
   //Gets the name and position of the host
   int ring_position = std::stoi(simgrid::s4u::this_actor::get_name());
   std::string host_name = simgrid::s4u::Host::current()->get_cname();
@@ -87,9 +88,15 @@ static void communicate(long int token_size){
     Msg token;
     token.content = "Token";
     token.size = token_size;
+    token.task_cost = task_cost;
 
     //Simulates reading the token from disk
     read_disk(disk_vector[0], token.size);
+
+
+    //Executes the cost of the computation
+    simgrid::s4u::this_actor::execute(task_cost);
+    XBT_INFO("Host \"%u\" finished computation task of cost: \"%lu\"", ring_position,token.task_cost);
 
     //Puts msg on the neighbor_maibox
     neighbor_mailbox = simgrid::s4u::Mailbox::by_name(std::to_string(neighbor_position));
@@ -109,7 +116,11 @@ static void communicate(long int token_size){
     Msg* token = (Msg*)(mailbox->get());
     XBT_INFO("Host \"%u\" received \"%s\"", ring_position, token->content.c_str());
     
-    
+    //Executes the cost of the computation
+    simgrid::s4u::this_actor::execute(task_cost);
+    XBT_INFO("Host \"%u\" finished computation task of cost: \"%lu\"", ring_position,token->task_cost);
+
+
     //Puts token on the neighbor_maibox
     neighbor_mailbox = simgrid::s4u::Mailbox::by_name(std::to_string(neighbor_position));
     XBT_INFO("Host \"%u\" sent \"%s\" to Host \"%s\" \n", ring_position, token->content.c_str() , neighbor_mailbox->get_cname());
@@ -123,17 +134,19 @@ static void communicate(long int token_size){
 }
 
 //ARGUMENTS: 1. platform.xml file
-//			 2. number of bytes of the token (long int)
+//			     2. number of bytes of the token (long int)
+//           3. cost of computation
 int main(int argc, char* argv[])
 {
   
   //Creats Engine
   simgrid::s4u::Engine e(&argc, argv);
   //Makes sure there are 3 arguments 
-  xbt_assert(argc==3, "Usage: %s platform_file.xml", argv[0]);
+  xbt_assert(argc==4, "Usage: %s platform_file.xml", argv[0]);
   e.load_platform(argv[1]);
 
   long int token_size = std::stol(argv[2]);
+  long int task_cost = std::stol(argv[3]);
   
   XBT_INFO("Number of hosts '%zu'", e.get_host_count());
 
@@ -143,7 +156,7 @@ int main(int argc, char* argv[])
   int ring_position=0;
   //For every host, create an Actor to be run on that host. Actor name will be his position on the ring.
   for(auto  host : list){
-      simgrid::s4u::Actor::create((std::to_string(ring_position)).c_str(), host, communicate , token_size);
+      simgrid::s4u::Actor::create((std::to_string(ring_position)).c_str(), host, communicate , token_size,task_cost);
       ring_position++;
   }
   //Start engine and show results:
